@@ -1,4 +1,4 @@
-"""Minerals Model Module"""
+"""Minerals Model Module."""
 
 from typing import Any, List
 
@@ -7,8 +7,10 @@ from pytorch_lightning import LightningModule
 from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 
+
 class MineralsLitModule(LightningModule):
-    """Minerals model module"""
+    """Minerals model module."""
+
     def __init__(
         self,
         net: torch.nn.Module,
@@ -17,7 +19,7 @@ class MineralsLitModule(LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters(logger=False, ignore=["net"])
-        
+
         # model
         self.net = net
 
@@ -30,7 +32,7 @@ class MineralsLitModule(LightningModule):
 
         self.train_loss = MeanMetric()
         self.val_loss = MeanMetric()
-        
+
         self.val_acc_best = MaxMetric()
 
     def forward(self, x: torch.Tensor):
@@ -82,8 +84,9 @@ class MineralsLitModule(LightningModule):
                 "monitor": "val/loss",
                 "interval": "epoch",
                 "frequency": 1,
-            }
+            },
         }
+
 
 if __name__ == "__main__":
     import hydra

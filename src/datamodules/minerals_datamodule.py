@@ -1,17 +1,18 @@
-"""Minerals dataset datamodule"""
+"""Minerals dataset datamodule."""
 
-from typing import Any, Dict, Optional, Tuple
 from glob import glob
-from PIL import Image
-import cv2
+from typing import Any, Dict, Optional, Tuple
 
+import cv2
 import torch
+from PIL import Image
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import transforms
 
+
 class MineralsDataModule(LightningDataModule):
-    """Minerals datamodule"""
+    """Minerals datamodule."""
 
     def __init__(
         self,
@@ -24,11 +25,13 @@ class MineralsDataModule(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         # data transformation/augmentation
-        self.transforms = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,)),
-        ])
+        self.transforms = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,)),
+            ]
+        )
 
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
@@ -38,13 +41,12 @@ class MineralsDataModule(LightningDataModule):
         return 7
 
     def setup(self, stage: Optional[str] = None):
-        """Load and split dataset from MineralsDataset"""
+        """Load and split dataset from MineralsDataset."""
         self.dataset = MineralsDataset(self.hparams.data_dir, self.transforms)
         train_size = int(self.hparams.train_size * len(self.dataset))
         val_size = len(self.dataset) - train_size
         self.data_train, self.data_val = random_split(
-            dataset=self.dataset, 
-            lengths=[train_size, val_size]
+            dataset=self.dataset, lengths=[train_size, val_size]
         )
 
     def train_dataloader(self):
@@ -63,8 +65,9 @@ class MineralsDataModule(LightningDataModule):
             shuffle=False,
         )
 
+
 class MineralsDataset(Dataset):
-    """Minerals dataset"""
+    """Minerals dataset."""
 
     def __init__(
         self,
@@ -76,9 +79,13 @@ class MineralsDataset(Dataset):
         self.transform = transform if transform else transforms.ToTensor()
 
         self.categories = {
-            "biotite": 0, "bornite": 1, "chrysocolla": 2,
-            "malachite": 3, "muscovite": 4, "pyrite": 5, 
-            "quartz": 6
+            "biotite": 0,
+            "bornite": 1,
+            "chrysocolla": 2,
+            "malachite": 3,
+            "muscovite": 4,
+            "pyrite": 5,
+            "quartz": 6,
         }
 
         self.images_path, self.labels = self.load_data(data_dir)
@@ -87,7 +94,7 @@ class MineralsDataset(Dataset):
         return len(self.images_path)
 
     def __getitem__(self, idx: int) -> Any:
-        """Get item at index idx"""
+        """Get item at index idx."""
         image_path = self.images_path[idx]
         label = self.labels[idx]
 
@@ -102,7 +109,7 @@ class MineralsDataset(Dataset):
         return image, label
 
     def load_data(self, data_dir: str) -> Tuple[list, list]:
-        """Get image path and label from data_dir"""
+        """Get image path and label from data_dir."""
         extensions = ["jpg", "jpeg", "png"]
 
         images_path = []
@@ -110,6 +117,7 @@ class MineralsDataset(Dataset):
         labels = [path.split("/")[-2] for path in images_path]
 
         return [images_path, labels]
+
 
 if __name__ == "__main__":
     import hydra
