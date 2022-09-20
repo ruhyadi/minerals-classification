@@ -135,4 +135,12 @@ if __name__ == "__main__":
     root = pyrootutils.setup_root(__file__, pythonpath=True)
     cfg = omegaconf.OmegaConf.load(root / "configs" / "datamodule" / "mnist.yaml")
     cfg.data_dir = str(root / "data")
-    _ = hydra.utils.instantiate(cfg)
+    mnist = hydra.utils.instantiate(cfg)
+    mnist.prepare_data()
+    mnist.setup()
+
+    dataloader = mnist.train_dataloader()
+    for img, label in dataloader:
+        print(img.shape)
+        print(label)
+        break

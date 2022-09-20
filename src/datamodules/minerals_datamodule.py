@@ -25,6 +25,7 @@ class MineralsDataModule(LightningDataModule):
 
         # data transformation/augmentation
         self.transforms = transforms.Compose([
+            transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,)),
         ])
@@ -43,8 +44,7 @@ class MineralsDataModule(LightningDataModule):
         val_size = len(self.dataset) - train_size
         self.data_train, self.data_val = random_split(
             dataset=self.dataset, 
-            lengths=[train_size, val_size],
-            generator=torch.Generator().manual_seed(42)
+            lengths=[train_size, val_size]
         )
 
     def train_dataloader(self):
@@ -89,15 +89,15 @@ class MineralsDataset(Dataset):
     def __getitem__(self, idx: int) -> Any:
         """Get item at index idx"""
         image_path = self.images_path[idx]
-        _label = self.labels[idx]
+        label = self.labels[idx]
 
         # load image
         image = Image.open(image_path)
+        image = image.convert("RGB") if image.mode != "RGB" else image
         image = self.transform(image)
 
-        # transforms label to one-hot encoding by categories
-        label = torch.zeros(len(self.categories))
-        label[self.categories[_label]] = 1.0
+        # transforms labels to tensor
+        label = torch.tensor(self.categories[label])
 
         return image, label
 
@@ -125,8 +125,5 @@ if __name__ == "__main__":
     dataset = hydra.utils.instantiate(cfg)
     dataset.setup()
     dataloader = dataset.train_dataloader()
-    
-    for img, label in dataloader:
-        print(img.shape)
-        print(label)
-        break
+
+    print(len(dataloader))

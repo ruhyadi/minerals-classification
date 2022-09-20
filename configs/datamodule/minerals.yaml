@@ -1,5 +1,5 @@
 _target_: src.datamodules.minerals_datamodule.MineralsDataModule
 data_dir: ${paths.data_dir}
-batch_size: 64
+batch_size: 32
 train_size: 0.8
-num_workers: 32
+num_workers: 8
