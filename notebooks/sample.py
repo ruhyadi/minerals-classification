@@ -1,15 +1,20 @@
 
+
+import numpy as np
+import cv2
 from PIL import Image
-from glob import glob
+import torch
+from torchvision import transforms
 
-exts = ['jpg', 'jpeg', 'png']
+preprocess = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor()])
 
-images = []
-[images.extend(glob(f'data/minet/*/*.{ext}')) for ext in exts]
+img = Image.open("data/minet/biotite/0001.jpg")
+print(img.size)
 
-for img in images:
-    image = Image.open(img)
-    if image.mode != 'RGB':
-        print("Before:", image.mode)
-        image = image.convert('RGB')
-        print("After:", image.mode)
+img = preprocess(img).to("cuda")
+print(img.shape)
+
+img = torch.unsqueeze(img, 0)
+
+# img = img.reshape(1, *img.shape).to('cuda')
+print(img.shape)

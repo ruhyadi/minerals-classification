@@ -1,0 +1,23 @@
+# @package _global_
+
+defaults:
+  - _self_
+  - model: mnist.yaml
+
+# run name
+name: inference
+
+# directory
+root: ${hydra:runtime.cwd}
+output_dir: ${root}/${hydra:run.dir}/inference
+
+# show and save result
+save_result: True
+
+weights_path: ${root}/weights/resnet18.pt
+
+# source directory
+source_dir: ${root}/data/test
+
+# device to inference
+device: 'cpu'
