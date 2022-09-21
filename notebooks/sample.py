@@ -1,5 +1,3 @@
-
-
 # import numpy as np
 # import cv2
 # from PIL import Image
@@ -26,4 +24,3 @@ img_path = "data/minet/biotite/0001.jpg"
 # check if extension is jpg
 if Path(img_path).suffix == ".jpg":
     print("yes")
-

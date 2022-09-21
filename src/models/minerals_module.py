@@ -99,5 +99,5 @@ if __name__ == "__main__":
     root = pyrootutils.setup_root(__file__, pythonpath=True)
     cfg = omegaconf.OmegaConf.load(root / "configs" / "model" / "minerals.yaml")
     model = hydra.utils.instantiate(cfg)
-    
+
     summary(model, (3, 224, 224), device="cpu")

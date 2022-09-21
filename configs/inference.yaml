@@ -21,4 +21,4 @@ weights_path: ${root}/logs/train/runs/2022-09-21_20-01-28/checkpoints/epoch_004.
 source_dir: ${root}/data/test
 
 # device to inference
-device: 'cpu'
+device: "cpu"

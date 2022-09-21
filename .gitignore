@@ -151,6 +151,6 @@ logs/
 .env
 .autoenv
 outputs/
-*.pt 
+*.pt
 *.pth
 *.ckpt
