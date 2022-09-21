@@ -2,7 +2,10 @@
 
 defaults:
   - _self_
-  - model: mnist.yaml
+  - model: minerals.yaml
+  - paths: default.yaml
+
+task_name: "inference"
 
 # run name
 name: inference
@@ -14,7 +17,7 @@ output_dir: ${root}/${hydra:run.dir}/inference
 # show and save result
 save_result: True
 
-weights_path: ${root}/weights/resnet18.pt
+weights_path: ${root}/logs/train/runs/2022-09-21_20-01-28/checkpoints/epoch_004.ckpt
 
 # source directory
 source_dir: ${root}/data/test

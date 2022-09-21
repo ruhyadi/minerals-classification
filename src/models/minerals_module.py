@@ -16,12 +16,14 @@ class MineralsLitModule(LightningModule):
         net: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
+        num_classes: int = 7,
     ):
         super().__init__()
-        self.save_hyperparameters(logger=False, ignore=["net"])
+        self.save_hyperparameters(logger=False)
 
         # model
         self.net = net
+        self.net.fc = torch.nn.Linear(self.net.fc.in_features, self.hparams.num_classes)
 
         # loss function
         self.criterion = torch.nn.CrossEntropyLoss()
@@ -92,9 +94,10 @@ if __name__ == "__main__":
     import hydra
     import omegaconf
     import pyrootutils
+    from torchsummary import summary
 
     root = pyrootutils.setup_root(__file__, pythonpath=True)
     cfg = omegaconf.OmegaConf.load(root / "configs" / "model" / "minerals.yaml")
     model = hydra.utils.instantiate(cfg)
-
-    print(model)
+    
+    summary(model, (3, 224, 224), device="cpu")
