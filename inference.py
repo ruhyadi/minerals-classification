@@ -16,6 +16,7 @@ import torch
 from torchvision import transforms
 import cv2
 from PIL import Image
+from pathlib import Path
 
 import hydra
 import pytorch_lightning as pl
@@ -35,7 +36,10 @@ def inference(cfg: DictConfig):
 
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
-    # model.load_state_dict(torch.load(cfg.get("weights_path")))
+    if Path(cfg.get("weights_path")).suffix == ".ckpt":
+        model = model.load_from_checkpoint(cfg.weights_path)
+    else:
+        model.load_state_dict(torch.load(cfg.weights_path))
     model.load_from_checkpoint(cfg.get("weights_path"))
     model.eval().to(cfg.get("device"))
 

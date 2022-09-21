@@ -6,19 +6,9 @@ defaults:
   - paths: default.yaml
   - hydra: default.yaml
 
-task_name: "inference"
-
-# directory
 root: ${hydra:runtime.cwd}
-output_dir: ${root}/${hydra:run.dir}/inference
 
-# show and save result
-save_result: True
-
+task_name: convert
 weights_path: ${root}/logs/train/runs/2022-09-21_20-01-28/checkpoints/epoch_004.ckpt
-
-# source directory
-source_dir: ${root}/data/test
-
-# device to inference
-device: 'cpu'
+convert_to: pytorch
+save_path: ${root}/weights/resnet18.pt
