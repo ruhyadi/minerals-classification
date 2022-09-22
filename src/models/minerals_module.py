@@ -1,13 +1,25 @@
 """Minerals Model Module."""
 
 from typing import Any, List
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import wandb
 
 import torch
 from pytorch_lightning import LightningModule
-from torchmetrics import MaxMetric, MeanMetric
+from torchmetrics import MaxMetric, MeanMetric, ConfusionMatrix
 from torchmetrics.classification.accuracy import Accuracy
 
-
+categories = [
+    "biotite",
+    "bornite",
+    "chrysocolla",
+    "malachite",
+    "muscovite",
+    "pyrite",
+    "quartz",
+]
 class MineralsLitModule(LightningModule):
     """Minerals model module."""
 
@@ -71,11 +83,29 @@ class MineralsLitModule(LightningModule):
         return {"loss": loss, "preds": preds, "targets": targets}
 
     def validation_epoch_end(self, outputs: List[Any]):
+        """Log validation metrics at end of validation epoch."""
+        # wandb logging
+        wandb_logger = self.logger.experiment
+
+        # get predictions and targets
+        preds = torch.cat([x["preds"] for x in outputs])
+        targets = torch.cat([x["targets"] for x in outputs])
+
+        # log best accuracy
         acc = self.val_acc.compute()
         self.val_acc_best(acc)
         self.log("val/acc_best", self.val_acc_best, on_step=False, on_epoch=True, prog_bar=True)
 
+        # log confusion matrix
+        confmat = ConfusionMatrix(num_classes=self.hparams.num_classes, normalize="true").to(self.device)
+        confmat(preds, targets)
+        confmat_df = pd.DataFrame(confmat.compute().cpu().numpy(), columns=categories, index=categories)
+        confmat_img = sns.heatmap(confmat_df, annot=True, fmt=".2f").get_figure()
+        wandb_logger.log({"val/confmat": wandb.Image(confmat_img)})
+        plt.clf() # reset confusion matrix chart
+
     def configure_optimizers(self):
+        """Configure optimizers and schedulers."""
         optimizer = self.hparams.optimizer(params=self.parameters())
         scheduler = self.hparams.scheduler(optimizer=optimizer)
 

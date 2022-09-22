@@ -23,6 +23,9 @@ pytest          # tests
 opencv-python   # image processing
 gdown           # downloading files from google drive
 torchsummary    # model summary
+pandas          # data processing
+seaborn         # data visualization
+matplotlib      # data visualization
 # sh            # for running bash commands in some tests (linux/macos only)
 
 
