@@ -1,14 +1,14 @@
 """Minerals Model Module."""
 
 from typing import Any, List
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
-import wandb
-
 import torch
+import wandb
 from pytorch_lightning import LightningModule
-from torchmetrics import MaxMetric, MeanMetric, ConfusionMatrix
+from torchmetrics import ConfusionMatrix, MaxMetric, MeanMetric, PrecisionRecallCurve
 from torchmetrics.classification.accuracy import Accuracy
 
 categories = [
@@ -20,6 +20,8 @@ categories = [
     "pyrite",
     "quartz",
 ]
+
+
 class MineralsLitModule(LightningModule):
     """Minerals model module."""
 
@@ -58,10 +60,10 @@ class MineralsLitModule(LightningModule):
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
 
-        return loss, preds, y
+        return loss, preds, y, logits
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
+        loss, preds, targets, _ = self.step(batch)
 
         # update and log metrics
         self.train_loss(loss)
@@ -72,7 +74,7 @@ class MineralsLitModule(LightningModule):
         return {"loss": loss, "preds": preds, "targets": targets}
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, preds, targets = self.step(batch)
+        loss, preds, targets, logits = self.step(batch)
 
         # update and log metrics
         self.val_loss(loss)
@@ -80,7 +82,7 @@ class MineralsLitModule(LightningModule):
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
-        return {"loss": loss, "preds": preds, "targets": targets}
+        return {"loss": loss, "preds": preds, "targets": targets, "logits": logits}
 
     def validation_epoch_end(self, outputs: List[Any]):
         """Log validation metrics at end of validation epoch."""
@@ -90,6 +92,7 @@ class MineralsLitModule(LightningModule):
         # get predictions and targets
         preds = torch.cat([x["preds"] for x in outputs])
         targets = torch.cat([x["targets"] for x in outputs])
+        logits = torch.cat([x["logits"] for x in outputs])
 
         # log best accuracy
         acc = self.val_acc.compute()
@@ -97,12 +100,29 @@ class MineralsLitModule(LightningModule):
         self.log("val/acc_best", self.val_acc_best, on_step=False, on_epoch=True, prog_bar=True)
 
         # log confusion matrix
-        confmat = ConfusionMatrix(num_classes=self.hparams.num_classes, normalize="true").to(self.device)
+        confmat = ConfusionMatrix(num_classes=self.hparams.num_classes, normalize="true").to(
+            self.device
+        )
         confmat(preds, targets)
-        confmat_df = pd.DataFrame(confmat.compute().cpu().numpy(), columns=categories, index=categories)
+        confmat_df = pd.DataFrame(
+            confmat.compute().cpu().numpy(), columns=categories, index=categories
+        )
         confmat_img = sns.heatmap(confmat_df, annot=True, fmt=".2f").get_figure()
         wandb_logger.log({"val/confmat": wandb.Image(confmat_img)})
-        plt.clf() # reset confusion matrix chart
+        plt.clf()  # reset confusion matrix chart
+
+        # precision recall curve
+        pr_curve = PrecisionRecallCurve(num_classes=self.hparams.num_classes).to(self.device)
+        pr_curve(logits, targets)
+        precision, recall, _ = pr_curve.compute()
+        for i in range(self.hparams.num_classes):
+            plt.plot(recall[i].cpu().numpy(), precision[i].cpu().numpy(), label=categories[i])
+        plt.legend()
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.title("Precision Recall Curve")
+        wandb_logger.log({"val/pr_curve": wandb.Image(plt)})
+        plt.clf()  # reset precision recall curve chart
 
     def configure_optimizers(self):
         """Configure optimizers and schedulers."""

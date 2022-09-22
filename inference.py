@@ -7,17 +7,17 @@ root = pyrootutils.setup_root(
     dotenv=True,
 )
 
+import json
 import os
 from glob import glob
 from pathlib import Path
-import json
-from torchmetrics import ConfusionMatrix
 
 import hydra
 import torch
 from omegaconf import DictConfig
 from PIL import Image
 from pytorch_lightning import LightningModule
+from torchmetrics import ConfusionMatrix
 from torchvision import transforms
 
 from src import utils
@@ -33,6 +33,7 @@ categories = {
     5: "pyrite",
     6: "quartz",
 }
+
 
 @hydra.main(version_base="1.2", config_path=root / "configs", config_name="inference.yaml")
 def inference(cfg: DictConfig):
@@ -68,6 +69,7 @@ def inference(cfg: DictConfig):
             json.dump({img_path.split("/")[-1]: {"class": pred_class, "confidence": pred_conf}}, f)
 
     print("[INFO] Results saved to", cfg.get("output_dir"))
+
 
 if __name__ == "__main__":
     inference()
