@@ -10,7 +10,7 @@ task_name: "inference"
 
 # directory
 root: ${hydra:runtime.cwd}
-output_dir: ${root}/${hydra:run.dir}/inference
+output_dir: ${hydra:run.dir}
 
 # show and save result
 save_result: True

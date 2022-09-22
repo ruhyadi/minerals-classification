@@ -10,6 +10,8 @@ root = pyrootutils.setup_root(
 import os
 from glob import glob
 from pathlib import Path
+import json
+from torchmetrics import ConfusionMatrix
 
 import hydra
 import torch
@@ -22,6 +24,15 @@ from src import utils
 
 log = utils.get_pylogger(__name__)
 
+categories = {
+    0: "biotite",
+    1: "bornite",
+    2: "chrysocolla",
+    3: "malachite",
+    4: "muscovite",
+    5: "pyrite",
+    6: "quartz",
+}
 
 @hydra.main(version_base="1.2", config_path=root / "configs", config_name="inference.yaml")
 def inference(cfg: DictConfig):
@@ -46,10 +57,17 @@ def inference(cfg: DictConfig):
             cfg.get("device")
         )  # preprocess and add batch dim
         pred = model(img)
-        print("Prediction 0:", pred)
-        pred = torch.argmax(pred, dim=1)
-        print("Prediction 1:", pred)
+        pred = torch.nn.functional.softmax(pred, dim=1)[0]
+        pred_idx = torch.argmax(pred).item()
+        pred_conf = round(pred[pred_idx].item(), 2)
+        pred_class = categories[pred_idx]
+        print(f"Prediction: {pred_class} ({pred_conf})")
 
+        # dumping to json
+        with open(os.path.join(cfg.get("output_dir"), "predictions.json"), "w") as f:
+            json.dump({img_path.split("/")[-1]: {"class": pred_class, "confidence": pred_conf}}, f)
+
+    print("[INFO] Results saved to", cfg.get("output_dir"))
 
 if __name__ == "__main__":
     inference()
