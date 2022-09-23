@@ -12,53 +12,70 @@
 
 </div>
 
-
 ## Description
 
 MLOps approach to task image classification. Deep learning framework with PyTorch Lightning, Parameter/argument configuration with Hydra, Hyperparameter tuning with Optuna, and Logging with Weight&Bias.
 
 ## How to Inference
-
-
-
-## How to run
-
-Install dependencies
-
+Weights dari model terbaik (ResNet18) sudah disedikan pada `weights/resnet18.pt`.
 ```bash
-# clone project
-git clone https://github.com/ruhyadi/minerals-classification
-cd minerals-classification
-
-# [OPTIONAL] create conda environment
-conda create -n minerals python=3.9
-conda activate minerals
-
-# install pytorch according to instructions
-# https://pytorch.org/get-started/
-
-# install requirements
-pip install -r requirements.txt
+python inference.py \
+    weights_path=./weights/resnet18.pt \
+    source_dir=./data/test
+```
+Hasil inference berupa `.json` yang terdiri dari:
+```json
+{"test_image_name": {"class": "prediction_class", "confidence": "confidence"}}
+{"bornite2": {"class": "bornite", "confidence": 0.34}}
 ```
 
-Train model with default configuration
-
+## How to Train Model
+Anda dapat dengan mudah melakukan training pada model menggunakan `configs/train.yaml` yang telah disediakan. Anda dapat mengubah isi `configs/train.yaml` sesuai kebutuhan.
 ```bash
-# train on CPU
-python src/train.py trainer=cpu
+# normal training
+python src/train.py 
 
-# train on GPU
-python src/train.py trainer=gpu
+# change configuration
+python src/train.py \
+    model.net._target_=torchvision.models.resnet18 \
+    datamodule.batch_size=32 \
+    trainer.max_epochs=20
+```
+Anda juga dapet menggunakan lebih dari satu GPU untuk training (multi-gpu) dengan mengubah konfigurasi `configs/train.yaml` atau dengan:
+```bash
+python src/train.py \
+    trainer=gpu \
+    device=1,2,3,4
 ```
 
-Train model with chosen experiment configuration from [configs/experiment/](configs/experiment/)
-
+## Hyperparameter Tuning
+Anda dapat dengan mudah melakukan hyperparameter tuning (mengganti model, menggubah learning rate, etc) dengan terlebih dahulu mengedit `configs/hparams_search/minerals_optuna.yaml` sesuai dengan kebutuhan. Selanjutnya, script train dapat dijalankan:
 ```bash
-python src/train.py experiment=experiment_name.yaml
+python src/train.py -m hparams_search=minerals_optuna
 ```
 
-You can override any parameter from command line like this
-
+## Convert Model from Checkpoint
+Semua hasil training disimpan dalam bentuk checkpoint (`.ckpt`) anda dapat mengubahnya menjadi bentuk `.pt` atau `.onnx`, dengan mengedit `configs/convert.yaml` terlebih dahulu:
 ```bash
-python src/train.py trainer.max_epochs=20 datamodule.batch_size=64
+python convert.py
+
+# atau langsung di terminal
+python convert.py \
+    weights_path=logs/train/runs/2022-09-23_09-45-30/checkpoints/epoch_008.ckpt \
+    convert_to=pytorch \
+    save_path=weights/resnet18_xx.pt
 ```
+
+## Evaluation Model
+Evaluasi dapat dengan mudah dilakukan dengan pertama-tama mengedit `configs/eval.yaml` sesuai dengan kebutuhan. Setelahnya dapat menjalankan script evaluasi:
+```bash
+python src/eval.py
+
+# atau langsung di terminal
+python src/eval.py \
+    ckpt_path=logs/train/multiruns/2022-09-23_14-23-34/3/checkpoints/epoch_014.ckpt
+```
+Hasil dari model evaluation adalah `confmat.png`, `pr_curve.png` dan `roc_curve.png` yang simpan pada root. 
+
+## Reference
+- [Lightning Hydra Template](https://github.com/ashleve/lightning-hydra-template)

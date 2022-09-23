@@ -16,4 +16,4 @@ tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
 root: ${hydra:runtime.cwd}
-ckpt_path: ${root}/logs/train/runs/2022-09-23_09-45-30/checkpoints/epoch_008.ckpt
+ckpt_path: ${root}/logs/train/multiruns/2022-09-23_14-23-34/3/checkpoints/epoch_014.ckpt
