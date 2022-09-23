@@ -37,7 +37,10 @@ class MineralsLitModule(LightningModule):
 
         # model
         self.net = net
-        self.net.fc = torch.nn.Linear(self.net.fc.in_features, self.hparams.num_classes)
+        if hasattr(self.net, "fc"):
+            self.net.fc = torch.nn.Linear(self.net.fc.in_features, self.hparams.num_classes)
+        elif hasattr(self.net, "classifier"):
+            self.net.classifier[-1] = torch.nn.Linear(self.net.classifier[-1].in_features, self.hparams.num_classes)
 
         # loss function
         self.criterion = torch.nn.CrossEntropyLoss()
