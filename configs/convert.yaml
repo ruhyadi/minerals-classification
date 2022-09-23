@@ -9,6 +9,6 @@ defaults:
 root: ${hydra:runtime.cwd}
 
 task_name: convert
-weights_path: ${root}/logs/train/runs/2022-09-21_20-01-28/checkpoints/epoch_004.ckpt
+weights_path: ${root}/logs/train/multiruns/2022-09-23_14-23-34/3/checkpoints/epoch_014.ckpt
 convert_to: pytorch
-save_path: ${root}/weights/resnet18.pt
+save_path: ${root}/weights/resnet18

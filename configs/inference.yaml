@@ -15,7 +15,7 @@ output_dir: ${hydra:run.dir}
 # show and save result
 save_result: True
 
-weights_path: ${root}/logs/train/runs/2022-09-21_20-01-28/checkpoints/epoch_004.ckpt
+weights_path: ${root}/weights/resnet18.pt
 
 # source directory
 source_dir: ${root}/data/test

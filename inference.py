@@ -45,14 +45,13 @@ def inference(cfg: DictConfig):
         model = model.load_from_checkpoint(cfg.weights_path)
     else:
         model.load_state_dict(torch.load(cfg.weights_path))
-    model.load_from_checkpoint(cfg.get("weights_path"))
     model.eval().to(cfg.get("device"))
 
     # preprocesssing torch transforms
     preprocess = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor()])
 
     imgs_path = sorted(glob(os.path.join(cfg.get("source_dir"), "*.jpg")))
-    for img_path in imgs_path:
+    for i, img_path in enumerate(imgs_path):
         img = Image.open(img_path)
         img = torch.unsqueeze(preprocess(img), dim=0).to(
             cfg.get("device")
@@ -65,8 +64,8 @@ def inference(cfg: DictConfig):
         print(f"Prediction: {pred_class} ({pred_conf})")
 
         # dumping to json
-        with open(os.path.join(cfg.get("output_dir"), "predictions.json"), "w") as f:
-            json.dump({img_path.split("/")[-1]: {"class": pred_class, "confidence": pred_conf}}, f)
+        with open(os.path.join(cfg.get("output_dir"), f"predictions_{i:02d}.json"), "w") as f:
+            f.write(json.dumps({img_path.split("/")[-1].split(".")[0]: {"class": pred_class, "confidence": pred_conf}}))
 
     print("[INFO] Results saved to", cfg.get("output_dir"))
 

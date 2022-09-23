@@ -1,4 +1,12 @@
 """Convert checkpoint to model."""
+import pyrootutils
+
+root = pyrootutils.setup_root(
+    search_from=__file__,
+    indicator=[".git", "pyproject.toml"],
+    pythonpath=True,
+    dotenv=True,
+)
 
 import os
 from pathlib import Path
@@ -13,7 +21,7 @@ from src import utils
 log = utils.get_pylogger(__name__)
 
 
-@hydra.main(config_path="configs", config_name="convert.yaml")
+@hydra.main(version_base="1.2", config_path=root / "configs", config_name="convert.yaml")
 def convert(cfg: DictConfig):
     """Convert checkpoint weights to model."""
     assert Path(cfg.get("weights_path")).suffix == ".ckpt", "Weights path must be a .ckpt file"
