@@ -43,10 +43,10 @@ class MineralsDataModule(LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         """Load and split dataset from MineralsDataset."""
         self.dataset = MineralsDataset(self.hparams.data_dir, self.transforms)
-        train_size = int(self.hparams.train_size * len(self.dataset))
-        val_size = len(self.dataset) - train_size
+        self.train_size = int(self.hparams.train_size * len(self.dataset))
+        self.val_size = len(self.dataset) - self.train_size
         self.data_train, self.data_val = random_split(
-            dataset=self.dataset, lengths=[train_size, val_size]
+            dataset=self.dataset, lengths=[self.train_size, self.val_size]
         )
 
     def train_dataloader(self):
@@ -61,6 +61,14 @@ class MineralsDataModule(LightningDataModule):
         return DataLoader(
             dataset=self.data_val,
             batch_size=self.hparams.batch_size,
+            num_workers=self.hparams.num_workers,
+            shuffle=False,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            dataset=self.data_val,
+            batch_size=self.val_size,
             num_workers=self.hparams.num_workers,
             shuffle=False,
         )

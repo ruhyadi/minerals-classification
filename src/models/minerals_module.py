@@ -8,7 +8,7 @@ import seaborn as sns
 import torch
 import wandb
 from pytorch_lightning import LightningModule
-from torchmetrics import ConfusionMatrix, MaxMetric, MeanMetric, PrecisionRecallCurve
+from torchmetrics import ConfusionMatrix, MaxMetric, MeanMetric, PrecisionRecallCurve, ROC
 from torchmetrics.classification.accuracy import Accuracy
 
 categories = [
@@ -86,43 +86,32 @@ class MineralsLitModule(LightningModule):
 
     def validation_epoch_end(self, outputs: List[Any]):
         """Log validation metrics at end of validation epoch."""
-        # wandb logging
-        wandb_logger = self.logger.experiment
-
-        # get predictions and targets
         preds = torch.cat([x["preds"] for x in outputs])
         targets = torch.cat([x["targets"] for x in outputs])
         logits = torch.cat([x["logits"] for x in outputs])
+
+        # wandb logging
+        self.wandb_logger = self.logger.experiment
 
         # log best accuracy
         acc = self.val_acc.compute()
         self.val_acc_best(acc)
         self.log("val/acc_best", self.val_acc_best, on_step=False, on_epoch=True, prog_bar=True)
 
-        # log confusion matrix
-        confmat = ConfusionMatrix(num_classes=self.hparams.num_classes, normalize="true").to(
-            self.device
-        )
-        confmat(preds, targets)
-        confmat_df = pd.DataFrame(
-            confmat.compute().cpu().numpy(), columns=categories, index=categories
-        )
-        confmat_img = sns.heatmap(confmat_df, annot=True, fmt=".2f").get_figure()
-        wandb_logger.log({"val/confmat": wandb.Image(confmat_img)})
-        plt.clf()  # reset confusion matrix chart
+        # log metrics
+        self._confusion_matrix(preds, targets, self.hparams.num_classes, self.device)
+        self._precision_recall_curve(logits, targets, self.hparams.num_classes, self.device)
+        self._roc_curve(logits, targets, self.hparams.num_classes, self.device)
 
-        # precision recall curve
-        pr_curve = PrecisionRecallCurve(num_classes=self.hparams.num_classes).to(self.device)
-        pr_curve(logits, targets)
-        precision, recall, _ = pr_curve.compute()
-        for i in range(self.hparams.num_classes):
-            plt.plot(recall[i].cpu().numpy(), precision[i].cpu().numpy(), label=categories[i])
-        plt.legend()
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-        plt.title("Precision Recall Curve")
-        wandb_logger.log({"val/pr_curve": wandb.Image(plt)})
-        plt.clf()  # reset precision recall curve chart
+    def test_step(self, batch: Any, batch_idx: int):
+        loss, preds, targets, logits = self.step(batch)
+
+        # plot metrics
+        self._confusion_matrix(preds, targets, self.hparams.num_classes, self.device, log=False)
+        self._precision_recall_curve(logits, targets, self.hparams.num_classes, self.device, log=False)
+        self._roc_curve(logits, targets, self.hparams.num_classes, self.device, log=False)
+
+        return {"loss": loss, "preds": preds, "targets": targets, "logits": logits}
 
     def configure_optimizers(self):
         """Configure optimizers and schedulers."""
@@ -138,6 +127,56 @@ class MineralsLitModule(LightningModule):
                 "frequency": 1,
             },
         }
+
+    def _confusion_matrix(self, preds, targets, num_classes, device, log=True):
+        """Compute confusion matrix."""
+        confmat = ConfusionMatrix(num_classes=num_classes, normalize="true").to(device)
+        confmat(preds, targets)
+        confmat_df = pd.DataFrame(
+            confmat.compute().cpu().numpy(), 
+            columns=categories, 
+            index=categories
+        )
+        confmat_img = sns.heatmap(confmat_df, annot=True, fmt=".2f").get_figure()
+        if log:
+            self.wandb_logger.log({"val/confmat": wandb.Image(confmat_img)})
+        else:
+            plt.savefig("confmat.png")
+        plt.clf()  # reset confusion matrix chart
+
+    def _precision_recall_curve(self, logits, targets, num_classes, device, log=True):
+        """Compute precision recall curve."""
+        pr_curve = PrecisionRecallCurve(num_classes=num_classes).to(device)
+        pr_curve(logits, targets)
+        precision, recall, _ = pr_curve.compute()
+        for i in range(num_classes):
+            plt.plot(recall[i].cpu().numpy(), precision[i].cpu().numpy(), label=categories[i])
+        plt.legend()
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.title("Precision Recall Curve")
+        if log:
+            self.wandb_logger.log({"val/pr_curve": wandb.Image(plt)})
+        else:
+            plt.savefig("pr_curve.png")
+        plt.clf() # reset precision recall curve chart
+
+    def _roc_curve(self, logits, targets, num_classes, device, log=True):
+        """Compute roc curve."""
+        roc_curve = ROC(num_classes=num_classes).to(device)
+        roc_curve(logits, targets)
+        fpr, tpr, _ = roc_curve.compute()
+        for i in range(num_classes):
+            plt.plot(fpr[i].cpu().numpy(), tpr[i].cpu().numpy(), label=categories[i])
+        plt.legend()
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title("ROC Curve")
+        if log:
+            self.wandb_logger.log({"val/roc_curve": wandb.Image(plt)})
+        else:
+            plt.savefig("roc_curve.png")
+        plt.clf() # reset roc curve chart
 
 
 if __name__ == "__main__":
